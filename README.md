@@ -1,113 +1,92 @@
-# LangGraph ile Akıllı Müşteri Destek Sistemi
+# Intelligent Customer Support System with LangGraph
 
-Bu proje, `langgraph` kullanarak çok adımlı ve çok ajanlı bir müşteri destek otomasyon sistemi oluşturur. Sistem, gelen talepleri sınıflandırabilir, ilgili uzmana (ajan) yönlendirebilir, çözülemeyen durumları bir üst seviyeye (escalate) taşıyabilir ve gerekirse "Human-in-the-Loop" (insan onayı) adımı ekleyebilir.
+This project creates a multi-step, multi-agent customer support automation system using `langgraph`. The system can classify incoming requests, route them to the relevant expert (agent), escalate unresolved situations to a higher level, and add a "Human-in-the-Loop" (human approval) step when necessary.
 
+## Features
 
+* **Triage Agent:** Analyzes the incoming message; determines category (`technical`, `billing`), priority (`high`, `medium`), and sentiment (`negative`, `positive`).
+* **Expert Agents:** There are 3 different experts: `TechnicalSupportAgent`, `BillingAgent`, and `GeneralSupportAgent`.
+* **Conditional Routing:** The graph flow dynamically changes based on the category, priority, or sentiment of the incoming request.
+* **Escalation:** Requests containing negative sentiment, high priority, or keywords like "cancel/refund" are routed to the `EscalationAgent`.
+* **Human-in-the-Loop:** The `human_review_node` step simulates critical requests being approved or rejected by a human (via terminal).
+* **State Management:** Uses `SupportState` (TypedDict) to carry information like `ticket_id`, `customer_id` throughout the conversation.
+* **Memory:** Uses `MemorySaver` to remember the state for each conversation (thread_id).
 
-##  Özellikler
+## Installation
 
-* **Triage Agent:** Gelen mesajı analiz eder; kategori (`technical`, `billing`), öncelik (`high`, `medium`) ve duygu (`negative`, `positive`) belirler.
-* **Uzman Ajanlar:** `TechnicalSupportAgent`, `BillingAgent` ve `GeneralSupportAgent` olmak üzere 3 farklı uzman bulunur.
-* **Koşullu Yönlendirme:** Gelen talebin kategorisine, önceliğine veya duygusuna göre grafik akışı dinamik olarak değişir.
-* **Escalation (Yükseltme):** Negatif duygu, yüksek öncelik veya "iptal/iade" gibi anahtar kelimeler içeren talepler, `EscalationAgent`'a yönlendirilir.
-* **Human-in-the-Loop:** `human_review_node` adımı, kritik taleplerin bir insan tarafından (terminal üzerinden) onaylanmasını veya reddedilmesini simüle eder.
-* **Durum (State) Yönetimi:** `SupportState` (TypedDict) kullanarak konuşma boyunca `ticket_id`, `customer_id` gibi bilgileri taşır.
-* **Hafıza:** `MemorySaver` kullanarak her konuşma (thread_id) için durumu hatırlar.
+1. **Clone the Repository:**
+```bash
+    git clone https://github.com/AbdulSametTurkmenoglu/smart_customer_support_system_with_langgarph.git
+    cd smart_customer_support_system_with_langgarph
+```
 
-
-
-## Kurulum
-
-1.  **Depoyu Klonlama:**
-    ```bash
-    git clone [https://github.com/AbdulSametTurkmenoglu/langgarph-ile-akilli-musteri-destek-sistemi.git](https://github.com/AbdulSametTurkmenoglu/langgarph-ile-akilli-musteri-destek-sistemi.git)
-    cd langgarph-ile-akilli-musteri-destek-sistemi
-    ```
-
-2.  **Sanal Ortam (Önerilir):**
-    ```bash
+2. **Virtual Environment (Recommended):**
+```bash
     python -m venv .venv
     # Windows: .\.venv\Scripts\activate
     # macOS/Linux: source .venv/bin/activate
-    ```
+```
 
-3.  **Gerekli Kütüphaneleri Yükleme:**
-    ```bash
+3. **Install Required Libraries:**
+```bash
     pip install -r requirements.txt
-    ```
+```
 
-4.  **.env Dosyasını Oluşturma:**
-    `.env.example` dosyasını kopyalayıp `.env` olarak adlandırın ve içini `OPENAI_API_KEY`'inizle doldurun:
-    ```bash
+4. **Create .env File:**
+    Copy the `.env.example` file, rename it to `.env`, and fill it with your `OPENAI_API_KEY`:
+```bash
     # Windows
     copy .env.example .env
     
     # macOS / Linux
     cp .env.example .env
-    ```
+```
 
-##  Kullanım
+## Usage
 
-Proje, 3 farklı senaryoyu test eden bir örnek çalıştırma script'i içerir. Bu script, grafiğin farklı yollara (teknik destek, iade talebi, negatif duygu) nasıl dallandığını gösterir.
-
+The project includes a sample execution script that tests 3 different scenarios. This script demonstrates how the graph branches into different paths (technical support, refund request, negative sentiment).
 ```bash
 python run_examples.py
 ```
 
-### Örnek Çıktı (İade Talebi Senaryosu)
-
+### Sample Output (Refund Request Scenario)
 ```
 ============================================================
- ÖRNEK: Faturalama İptal/İade (Human-in-the-Loop)
+ EXAMPLE: Billing Cancellation/Refund (Human-in-the-Loop)
 ============================================================
-
 --- Node: Triage Agent ---
-   [Tool] Ticket oluşturuldu: TKT-20251031143005
-  └─ Kategori: billing
-  └─ Öncelik: medium
-  └─ Duygu: neutral
-
-... Adım Tamamlandı: triage ...
-... Yönlendirme: Triage Sonrası ...
-  └─ Karar: billing
-
-... Adım Tamamlandı: __start__ ...
-
+   [Tool] Ticket created: TKT-20251031143005
+  └─ Category: billing
+  └─ Priority: medium
+  └─ Sentiment: neutral
+... Step Completed: triage ...
+... Routing: After Triage ...
+  └─ Decision: billing
+... Step Completed: __start__ ...
 --- Node: Billing Agent ---
-  └─ İnsan Gerekli mi: True
-
-... Adım Tamamlandı: billing ...
-... Yönlendirme: Escalation Gerekli mi? ...
-  └─ Karar: ESCALATE (İnsan onayı gerekli)
-
-... Adım Tamamlandı: __cond__ ...
-
+  └─ Human Required: True
+... Step Completed: billing ...
+... Routing: Escalation Required? ...
+  └─ Decision: ESCALATE (Human approval required)
+... Step Completed: __cond__ ...
 --- Node: Escalation Agent ---
-
-... Adım Tamamlandı: escalate ...
-... Yönlendirme: Escalation Sonrası ...
-  └─ Karar: HUMAN_REVIEW
-
-... Adım Tamamlandı: __cond__ ...
-
---- Node: Human Review (Bekleniyor) ---
+... Step Completed: escalate ...
+... Routing: After Escalation ...
+  └─ Decision: HUMAN_REVIEW
+... Step Completed: __cond__ ...
+--- Node: Human Review (Waiting) ---
   └─ Ticket: TKT-20251031143005
-  └─ Son mesaj: Talebinizin bir üst yetkiliye iletildiğini...
-
-  └─ Talebi onaylıyor musunuz? (e/h): e
-  └─ Durum: Onaylandı
-
-... Adım Tamamlandı: human_review ...
-
-... Adım Tamamlandı: __end__ ...
-
+  └─ Last message: Your request has been forwarded to a supervisor...
+  └─ Do you approve the request? (y/n): y
+  └─ Status: Approved
+... Step Completed: human_review ...
+... Step Completed: __end__ ...
 ============================================================
- SONUÇ: Faturalama İptal/İade (Human-in-the-Loop)
+ RESULT: Billing Cancellation/Refund (Human-in-the-Loop)
 ============================================================
   Ticket ID: TKT-20251031143005
-  Kategori: billing
-  Durum: resolved_by_human
-
-  Son Mesaj: Talebiniz uzmanımız tarafından onaylandı ve işleme alındı. Teşekkür ederiz.
+  Category: billing
+  Status: resolved_by_human
+  Last Message: Your request has been approved by our expert and is being processed. Thank you.
 ============================================================
 ```
